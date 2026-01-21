@@ -32,6 +32,9 @@
             android:name=".MainActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".ui.add_product.AddProductActivity" />
+
     </application>
 
 </manifest>
