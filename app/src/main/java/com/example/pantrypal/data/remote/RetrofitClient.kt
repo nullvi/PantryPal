@@ -5,8 +5,6 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
 
-    // BURAYA KENDİ MOCKAPI LİNKİNİ YAPIŞTIR (Sonunda '/' olsun)
-    // Örnek: "https://65d5...mockapi.io/api/v1/"
     private const val BASE_URL = "https://69702880a06046ce6188a68e.mockapi.io/"
 
     val instance: ApiService by lazy {

@@ -1,16 +1,15 @@
 package com.example.pantrypal.data.repository
 
-import android.content.Context
-import com.example.pantrypal.data.local.AppDatabase
+import com.example.pantrypal.data.local.ProductDao
 import com.example.pantrypal.data.model.Product
 
-class ProductRepository(context: Context) {
-    // Veritabanı örneğini alıyoruz
-    private val db = AppDatabase.getDatabase(context)
-    private val productDao = db.productDao()
+// ARTIK CONTEXT YERİNE DAO ALIYOR (Düzeltme Burada)
+class ProductRepository(private val productDao: ProductDao) {
 
     // Tüm ürünleri getir
     suspend fun getAllProducts(): List<Product> {
+        // Eğer DAO'daki fonksiyonun adı 'getAll' ise burayı değiştirme.
+        // Eğer hata verirse 'getAllProducts' olarak dene.
         return productDao.getAll()
     }
 

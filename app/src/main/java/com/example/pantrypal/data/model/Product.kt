@@ -7,13 +7,13 @@ import com.google.gson.annotations.SerializedName
 @Entity(tableName = "products")
 data class Product(
     @PrimaryKey(autoGenerate = true)
-    val uid: Int = 0, // Sadece telefonun içinde geçerli ID
+    val uid: Int = 0,
 
-    @SerializedName("id") // MockAPI'den gelen ID
+    @SerializedName("id")
     val remoteId: String? = null,
 
     @SerializedName("barcode")
-    val barcode: String,
+    val barcode: String? = null,
 
     @SerializedName("name")
     val name: String,
@@ -21,14 +21,13 @@ data class Product(
     @SerializedName("quantity")
     val quantity: Int,
 
+    // String DEĞİL Long olmalı!
     @SerializedName("expiry_date")
-    val expiryDate: String, // "YYYY-MM-DD" formatında tutacağız
+    val expiryDate: Long,
 
     @SerializedName("image_url")
     val imageUrl: String? = null,
 
-    // Bu alan API'de yok, sadece telefonda tutacağız
-    // false: Henüz sunucuya gönderilmedi (Dirty)
-    // true: Sunucuyla eşitlendi
-    val isSynced: Boolean = false
+    // Status alanı EKLENMELİ!
+    val status: Int = 1
 )

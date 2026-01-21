@@ -7,6 +7,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.pantrypal.data.model.Product
 import com.example.pantrypal.databinding.ItemProductBinding
 import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 class ProductAdapter(
@@ -24,39 +25,33 @@ class ProductAdapter(
     override fun onBindViewHolder(holder: ProductViewHolder, position: Int) {
         val product = products[position]
 
-        // Ekrana yazdırma
+        // 1. Verileri Ekrana Yazma
         holder.binding.tvProductName.text = product.name
         holder.binding.tvQuantity.text = "x${product.quantity}"
-        holder.binding.tvExpiryDate.text = "Expires: ${product.expiryDate}"
 
-        // --- TARİH HESAPLAMA VE RENKLENDİRME ---
+        // DÜZELTME: Veritabanındaki Long (Sayı) tarihi, okunabilir String tarihe çeviriyoruz
         val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+        val formattedDate = sdf.format(Date(product.expiryDate))
+        holder.binding.tvExpiryDate.text = "Expires: $formattedDate"
 
-        try {
-            // String tarihi ("12/05/2026") Sayıya çeviriyoruz
-            val dateObject = sdf.parse(product.expiryDate)
+        // 2. Renklendirme Mantığı (Artık try-catch yok, matematik var)
+        val currentTime = System.currentTimeMillis()
+        val diff = product.expiryDate - currentTime
+        val threeDaysInMillis = 3L * 24 * 60 * 60 * 1000
 
-            if (dateObject != null) {
-                val expiryTime = dateObject.time
-                val currentTime = System.currentTimeMillis()
-
-                // Artık ikisi de sayı (Long) olduğu için çıkarma yapabiliriz
-                val diff = expiryTime - currentTime
-                val threeDaysInMillis = 3L * 24 * 60 * 60 * 1000
-
-                if (diff < 0) {
-                    holder.binding.containerLayout.setBackgroundColor(Color.parseColor("#FFCDD2")) // Tarihi geçmiş (Kırmızı)
-                } else if (diff <= threeDaysInMillis) {
-                    holder.binding.containerLayout.setBackgroundColor(Color.parseColor("#FFEBEE")) // Az kalmış (Açık Kırmızı)
-                } else {
-                    holder.binding.containerLayout.setBackgroundColor(Color.WHITE)
-                }
-            }
-        } catch (e: Exception) {
-            holder.binding.containerLayout.setBackgroundColor(Color.WHITE)
+        // 'root', satırın en dıştaki kapsayıcısıdır. containerLayout yerine bunu kullanmak daha garantidir.
+        if (diff < 0) {
+            // Tarihi geçmiş (Koyu Kırmızı)
+            holder.binding.root.setBackgroundColor(Color.parseColor("#FFCDD2"))
+        } else if (diff <= threeDaysInMillis) {
+            // 3 günden az kalmış (Açık Pembe)
+            holder.binding.root.setBackgroundColor(Color.parseColor("#FFEBEE"))
+        } else {
+            // Sorun yok (Beyaz)
+            holder.binding.root.setBackgroundColor(Color.WHITE)
         }
 
-        // Silme işlemi için tıklama
+        // 3. Silme İşlemi (Uzun basınca siler)
         holder.itemView.setOnLongClickListener {
             onDeleteClick(product)
             true

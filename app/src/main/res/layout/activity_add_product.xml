@@ -24,17 +24,31 @@
         android:layout_marginTop="24dp"
         android:text="📷 Scan Barcode"
         android:backgroundTint="#4CAF50"
-        app:icon="@android:drawable/ic_menu_camera"
         app:iconGravity="textStart"
         app:layout_constraintTop_toBottomOf="@+id/tvHeader" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilBarcode"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:hint="Barcode Number"
+        app:layout_constraintTop_toBottomOf="@+id/btnScan">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etBarcode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number" />
+    </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/tilName"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="16dp"
         android:hint="Product Name"
-        app:layout_constraintTop_toBottomOf="@+id/btnScan">
+        app:layout_constraintTop_toBottomOf="@+id/tilBarcode">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etName"
