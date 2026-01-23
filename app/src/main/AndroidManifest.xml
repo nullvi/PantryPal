@@ -31,5 +31,10 @@
         <activity android:name=".ui.add_product.AddProductActivity" />
         <activity android:name=".ui.scanner.BarcodeScannerActivity" />
 
+        <activity
+            android:name=".ui.about.AboutActivity"
+            android:label="About"
+            android:parentActivityName=".ui.dashboard.DashboardActivity" />
+
     </application>
 </manifest>
