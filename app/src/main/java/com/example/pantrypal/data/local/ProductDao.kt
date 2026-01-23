@@ -9,16 +9,26 @@ import com.example.pantrypal.data.model.Product
 
 @Dao
 interface ProductDao {
-    // Repository 'getAll' aradığı için ismini değiştirdik.
-    // Flow yerine direkt List döndürüyoruz (suspend ile).
+    // Listeleme
     @Query("SELECT * FROM products ORDER BY expiryDate ASC")
     suspend fun getAll(): List<Product>
 
-    // Repository 'insert' arıyor.
+    // Ekleme
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(product: Product)
 
-    // Repository 'delete' arıyor.
+    // Silme
     @Delete
     suspend fun delete(product: Product)
+
+    // --- SYNC FONKSİYONLARI ---
+
+    // 1. Gönderilmemişleri getir (Status = 1 olanlar)
+    @Query("SELECT * FROM products WHERE status = 1")
+    suspend fun getUnsyncedProducts(): List<Product>
+
+    // 2. Durum Güncelleme
+    // DÜZELTME: 'id' yerine senin modelindeki 'uid' ismini kullandık.
+    @Query("UPDATE products SET status = :newStatus WHERE uid = :productId")
+    suspend fun updateStatus(productId: Int, newStatus: Int)
 }

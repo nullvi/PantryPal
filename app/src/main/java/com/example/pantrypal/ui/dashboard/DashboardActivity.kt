@@ -72,10 +72,14 @@ class DashboardActivity : AppCompatActivity() {
     }
     // --- MENÜ ENTEGRASYONU BİTİŞİ ---
 
-    // Listeyi tazelemek için (Başka ekrandan dönünce çalışır)
+    // Listeyi tazelemek ve Sync başlatmak için
     override fun onResume() {
         super.onResume()
+        // 1. Listeyi yükle
         viewModel.loadProducts()
+
+        // 2. YENİ: Bekleyen verileri buluta gönder (Sync)
+        viewModel.syncPendingData()
     }
 
     private fun setupRecyclerView() {
