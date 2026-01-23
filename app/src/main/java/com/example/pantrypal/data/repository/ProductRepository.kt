@@ -6,7 +6,7 @@ import com.example.pantrypal.data.remote.RetrofitClient
 
 class ProductRepository(private val productDao: ProductDao) {
 
-    // GÜNCELLENDİ: Artık kullanıcı ID'sine göre veri çekiyoruz
+    // 1. Yerel veritabanından, o kullanıcının verilerini çek
     suspend fun getAllProducts(ownerId: String): List<Product> {
         return productDao.getAll(ownerId)
     }
@@ -21,22 +21,45 @@ class ProductRepository(private val productDao: ProductDao) {
         productDao.delete(product)
     }
 
-    // --- SYNC MOTORU ---
+    // --- YENİ EKLENEN: BULUTTAN VERİ ÇEKME (FETCH/PULL) ---
+    suspend fun refreshProductsFromApi(ownerId: String) {
+        try {
+            // 1. API'ye sor: "Bu kullanıcının ürünleri var mı?"
+            val response = RetrofitClient.instance.getProducts(ownerId)
+
+            if (response.isSuccessful && response.body() != null) {
+                val remoteList = response.body()!!
+
+                // 2. Gelen verileri Yerel DB'ye kaydet
+                for (remoteProduct in remoteList) {
+                    // API'den gelen veri temizdir (Synced = 0)
+                    // Ayrıca ownerId'yi garantiye alalım
+                    val productToSave = remoteProduct.copy(
+                        status = 0, // SYNCED
+                        ownerId = ownerId
+                    )
+
+                    // Veritabanına yaz (Çakışma varsa üzerine yazar/günceller)
+                    productDao.insert(productToSave)
+                }
+                android.util.Log.d("SYNC", "Fetched ${remoteList.size} items from cloud.")
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("SYNC", "Fetch Error: ${e.message}")
+        }
+    }
+
+    // --- MEVCUT: BULUTA VERİ GÖNDERME (PUSH) ---
     suspend fun syncUnsyncedProducts() {
-        // 1. Gönderilmemişleri çek
         val unsyncedList = productDao.getUnsyncedProducts()
 
-        if (unsyncedList.isEmpty()) return // Liste boşsa çık
+        if (unsyncedList.isEmpty()) return
 
-        // 2. Sırayla API'ye gönder
         for (product in unsyncedList) {
             try {
-                // Not: Product modeline owner_id eklendiği için,
-                // Retrofit bunu JSON'a çevirirken owner_id'yi de otomatik ekler.
                 val response = RetrofitClient.instance.addProduct(product)
 
                 if (response.isSuccessful) {
-                    // 3. Başarılıysa: Yerelde 'status = 0' yap (Synced)
                     productDao.updateStatus(product.uid, 0)
                     android.util.Log.d("SYNC", "Sent successfully: ${product.name}")
                 } else {

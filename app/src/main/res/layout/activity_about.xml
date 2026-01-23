@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/bg_app"
     android:padding="24dp">
 
     <LinearLayout
@@ -10,12 +12,22 @@
         android:gravity="center_horizontal"
         android:orientation="vertical">
 
-        <ImageView
-            android:id="@+id/imgProfile"
+        <androidx.cardview.widget.CardView
             android:layout_width="140dp"
             android:layout_height="140dp"
             android:layout_marginTop="16dp"
-            android:src="@mipmap/ic_launcher_round" />
+            app:cardCornerRadius="70dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="@color/bg_app">
+
+            <ImageView
+                android:id="@+id/imgProfile"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@drawable/my_photo"
+                android:scaleType="centerCrop" />
+
+        </androidx.cardview.widget.CardView>
 
         <TextView
             android:layout_width="wrap_content"
@@ -24,20 +36,22 @@
             android:text="Mustafa Ulvi Durmaz"
             android:textSize="22sp"
             android:textStyle="bold"
-            android:textColor="@android:color/black"/>
+            android:textColor="@color/text_primary"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="Student No: 202XXXXXX"
-            android:textSize="16sp" />
+            android:text="Student No: 28339"
+            android:textSize="16sp"
+            android:textColor="@color/text_secondary"/>
 
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_marginVertical="16dp"
-            android:background="#E0E0E0" />
+            android:background="@color/text_secondary"
+            android:alpha="0.3"/>
 
         <TextView
             android:layout_width="wrap_content"
@@ -45,14 +59,15 @@
             android:text="Mobile App Development"
             android:textSize="18sp"
             android:textStyle="bold"
-            android:textColor="@android:color/black"/>
+            android:textColor="@color/text_primary"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Computer Engineering (3rd Year)"
             android:textSize="16sp"
-            android:layout_marginTop="4dp"/>
+            android:layout_marginTop="4dp"
+            android:textColor="@color/text_secondary"/>
 
         <TextView
             android:layout_width="wrap_content"
@@ -60,20 +75,23 @@
             android:text="Academic Year: 2025/2026"
             android:textSize="14sp"
             android:textStyle="italic"
-            android:layout_marginTop="4dp"/>
+            android:layout_marginTop="4dp"
+            android:textColor="@color/text_secondary"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Polytechnic Institute of Tomar"
             android:textSize="14sp"
-            android:layout_marginTop="2dp"/>
+            android:layout_marginTop="2dp"
+            android:textColor="@color/text_secondary"/>
 
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_marginVertical="16dp"
-            android:background="#E0E0E0" />
+            android:background="@color/text_secondary"
+            android:alpha="0.3"/>
 
         <TextView
             android:layout_width="match_parent"
@@ -82,14 +100,15 @@
             android:textSize="18sp"
             android:textStyle="bold"
             android:layout_marginBottom="8dp"
-            android:textColor="@android:color/black"/>
+            android:textColor="@color/text_primary"/>
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:lineSpacingExtra="6dp"
             android:text="• Android Jetpack (Room, ViewModel, LiveData)\n  Source: Google (developer.android.com)\n\n• Retrofit &amp; Gson\n  Source: Square (github.com/square/retrofit)\n\n• CameraX &amp; ML Kit\n  Source: Google (developers.google.com/ml-kit)\n\n• OpenFoodFacts API\n  Source: world.openfoodfacts.org"
-            android:textSize="14sp" />
+            android:textSize="14sp"
+            android:textColor="@color/text_secondary"/>
 
     </LinearLayout>
 </ScrollView>

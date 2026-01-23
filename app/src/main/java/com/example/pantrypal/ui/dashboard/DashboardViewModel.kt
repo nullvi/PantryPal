@@ -22,27 +22,34 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         repository = ProductRepository(productDao)
     }
 
-    // Ürünleri Listele (GÜNCELLENDİ)
+    // Ürünleri Listele (GÜNCELLENDİ: Hem Yerel Hem Bulut)
     fun loadProducts() {
         viewModelScope.launch(Dispatchers.IO) {
             isLoading.postValue(true)
             try {
-                // 1. ÖNCE: Şu anki kullanıcı adını hafızadan (SharedPreferences) öğren
                 val sharedPrefs = getApplication<Application>().getSharedPreferences("PantryPalParams", Context.MODE_PRIVATE)
-                // Eğer username yoksa boş string döner
                 val currentUser = sharedPrefs.getString("username", "") ?: ""
 
-                // 2. SONRA: Repository'e "Sadece bu kullanıcının verilerini ver" de
                 if (currentUser.isNotEmpty()) {
-                    val productList = repository.getAllProducts(currentUser)
-                    products.postValue(productList)
+                    // 1. ADIM: Hız için hemen YEREL veriyi göster
+                    val localList = repository.getAllProducts(currentUser)
+                    products.postValue(localList)
+
+                    // 2. ADIM: Arka planda BULUTTAN yeni veri çek (Fetch/Pull)
+                    // Bu işlem veritabanını günceller
+                    repository.refreshProductsFromApi(currentUser)
+
+                    // 3. ADIM: Güncellenmiş veritabanını tekrar oku ve ekrana bas
+                    val updatedList = repository.getAllProducts(currentUser)
+                    products.postValue(updatedList)
+
                 } else {
-                    // Kullanıcı giriş yapmamışsa boş liste göster
                     products.postValue(emptyList())
                 }
 
             } catch (e: Exception) {
-                products.postValue(emptyList())
+                // Hata olsa bile en azından yerel veriler ekranda kalır, listeyi boşaltmıyoruz.
+                e.printStackTrace()
             } finally {
                 isLoading.postValue(false)
             }
@@ -57,10 +64,11 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    // Sync Motoru
+    // Sync Motoru (Bekleyenleri Gönder)
     fun syncPendingData() {
         viewModelScope.launch(Dispatchers.IO) {
             repository.syncUnsyncedProducts()
+            // Gönderme bitince bir de yenilerini çekelim ki tam senkron olsun
             loadProducts()
         }
     }

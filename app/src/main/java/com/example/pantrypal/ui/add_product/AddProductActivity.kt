@@ -30,7 +30,7 @@ class AddProductActivity : AppCompatActivity() {
                 // Barkodu ekrana yaz
                 binding.etBarcode.setText(it)
 
-                // YENİ: Kullanıcıya bilgi ver ve internetten aramayı başlat
+                // Kullanıcıya bilgi ver ve internetten aramayı başlat
                 Toast.makeText(this, "Searching online...", Toast.LENGTH_SHORT).show()
                 viewModel.searchBarcode(it)
             }
@@ -55,8 +55,15 @@ class AddProductActivity : AppCompatActivity() {
 
         setupDatePicker()
 
-        // YENİ: ViewModel'i dinlemeye başla (İsim gelirse dolduracak)
+        // ViewModel'i dinlemeye başla (İsim gelirse dolduracak)
         observeViewModel()
+
+        // --- YENİ EKLENEN KISIM: Kapat (X) Butonu ---
+        binding.btnClose.setOnClickListener {
+            // Aktiviteyi sonlandır ve önceki ekrana dön
+            finish()
+        }
+        // --------------------------------------------
 
         binding.btnSave.setOnClickListener {
             saveProduct()
@@ -67,8 +74,7 @@ class AddProductActivity : AppCompatActivity() {
         }
     }
 
-    // 3. YENİ FONKSİYON: ViewModel'den gelen verileri (Ürün Adı) dinle
-    // Bu fonksiyonu bul ve içeriğini güncelle
+    // 3. ViewModel'den gelen verileri (Ürün Adı) dinle
     private fun observeViewModel() {
         viewModel.scannedProductName.observe(this) { productName ->
             if (productName != null) {
@@ -82,17 +88,17 @@ class AddProductActivity : AppCompatActivity() {
                 binding.etQuantity.requestFocus()
 
             } else {
-                // 2. Durum: Ürün Bulunamadı (Islak mendil vakası)
+                // 2. Durum: Ürün Bulunamadı
                 // Kullanıcıyı uyar
                 Toast.makeText(this, "Product not found. Please enter name manually.", Toast.LENGTH_LONG).show()
 
-                // İsim alanını temizle (Belki önceki taramadan kalmıştır)
+                // İsim alanını temizle
                 binding.etName.setText("")
 
-                // UX HAMLESİ: İmleci "İsim" kutusuna odakla ki kullanıcı hemen yazabilsin
+                // İmleci "İsim" kutusuna odakla
                 binding.etName.requestFocus()
 
-                // Klavyeyi aç (Opsiyonel ama havalı olur)
+                // Klavyeyi aç
                 val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
                 imm.showSoftInput(binding.etName, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
             }

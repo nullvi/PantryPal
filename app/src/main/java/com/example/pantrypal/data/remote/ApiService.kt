@@ -12,24 +12,24 @@ interface ApiService {
 
     // --- USER ENDPOINTS ---
 
-    // Mevcut Login (Kullanıcı kontrolü)
     @GET("users")
     suspend fun login(
         @Query("username") username: String
     ): Response<List<User>>
 
-    // YENİ EKLENEN: Register (Kullanıcı Kayıt)
     @POST("users")
     suspend fun registerUser(@Body user: User): Response<User>
 
 
     // --- PRODUCT ENDPOINTS ---
 
-    // Mevcut Ürün Listeleme
+    // GÜNCELLENDİ: Artık hangi kullanıcının ürünlerini istediğimizi belirtiyoruz.
+    // Bu, URL'ye "?owner_id=KullaniciAdi" eklenmesini sağlar.
     @GET("product")
-    suspend fun getProducts(): Response<List<Product>>
+    suspend fun getProducts(
+        @Query("owner_id") ownerId: String
+    ): Response<List<Product>>
 
-    // Mevcut Ürün Ekleme
     @POST("product")
     suspend fun addProduct(@Body product: Product): Response<Product>
 }

@@ -28,7 +28,11 @@
         </activity>
 
         <activity android:name=".ui.dashboard.DashboardActivity" />
-        <activity android:name=".ui.add_product.AddProductActivity" />
+
+        <activity
+            android:name=".ui.add_product.AddProductActivity"
+            android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
+
         <activity android:name=".ui.scanner.BarcodeScannerActivity" />
 
         <activity
