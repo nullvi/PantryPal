@@ -28,6 +28,11 @@ data class Product(
     @SerializedName("image_url")
     val imageUrl: String? = null,
 
-    // Status alanı EKLENMELİ!
-    val status: Int = 1
+    // Status alanı (1 = Dirty/Gönderilmeyi Bekliyor)
+    val status: Int = 1,
+
+    // YENİ EKLENEN: Veri izolasyonu için kullanıcı kimliği
+    // MockAPI'de "owner_id" sütununa karşılık gelecek.
+    @SerializedName("owner_id")
+    val ownerId: String
 )

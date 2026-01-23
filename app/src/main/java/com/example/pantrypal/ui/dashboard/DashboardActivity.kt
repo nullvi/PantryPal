@@ -36,9 +36,19 @@ class DashboardActivity : AppCompatActivity() {
 
     // --- MENÜ ENTEGRASYONU BAŞLANGICI ---
 
-    // 1. Menüyü sağ üste yerleştir (dashboard_menu.xml dosyasını bağlar)
+    // 1. Menüyü sağ üste yerleştir ve KULLANICI ADINI YAZ
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.dashboard_menu, menu)
+
+        // --- YENİ EKLENEN KISIM: Kullanıcı Adını Gösterme ---
+        val sharedPrefs = getSharedPreferences("PantryPalParams", MODE_PRIVATE)
+        val username = sharedPrefs.getString("username", "Guest") // Varsayılan: Guest
+
+        // Menüdeki 'action_user_info' öğesini bul ve başlığını değiştir
+        val userItem = menu?.findItem(R.id.action_user_info)
+        userItem?.title = "Hi, $username"
+        // ----------------------------------------------------
+
         return true
     }
 
@@ -52,8 +62,7 @@ class DashboardActivity : AppCompatActivity() {
                 true
             }
             R.id.action_logout -> {
-                // DÜZELTİLDİ: Çıkış yaparken hafızayı (SharedPreferences) temizle
-                // LoginActivity'deki isimle AYNISI olmalı: "PantryPalParams"
+                // Çıkış yaparken hafızayı (SharedPreferences) temizle
                 val sharedPrefs = getSharedPreferences("PantryPalParams", MODE_PRIVATE)
                 val editor = sharedPrefs.edit()
                 editor.clear() // Tüm kayıtlı verileri sil (Beni hatırla iptal)
@@ -78,7 +87,7 @@ class DashboardActivity : AppCompatActivity() {
         // 1. Listeyi yükle
         viewModel.loadProducts()
 
-        // 2. YENİ: Bekleyen verileri buluta gönder (Sync)
+        // 2. Bekleyen verileri buluta gönder (Sync)
         viewModel.syncPendingData()
     }
 

@@ -3,6 +3,12 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:id="@+id/action_user_info"
+        android:title="Hi, User"
+        android:enabled="false"
+        app:showAsAction="always" />
+
+    <item
         android:id="@+id/action_about"
         android:title="About"
         android:icon="@android:drawable/ic_menu_info_details"
@@ -11,5 +17,6 @@
     <item
         android:id="@+id/action_logout"
         android:title="Logout"
+        android:icon="@android:drawable/ic_lock_power_off"
         app:showAsAction="never" />
 </menu>

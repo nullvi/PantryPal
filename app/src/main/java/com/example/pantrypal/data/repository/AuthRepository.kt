@@ -8,10 +8,14 @@ class AuthRepository {
     // Retrofit servisini çağırır
     private val api = RetrofitClient.instance
 
-    // Kullanıcı adı ile eşleşen kullanıcıları getirir (MockAPI mantığı)
+    // MEVCUT: Kullanıcı adı ile eşleşen kullanıcıları getirir (Login mantığı)
     suspend fun login(username: String): Response<List<User>> {
-        // Not: MockAPI'de filtreleme genellikle '?username=X' ile yapılır.
-        // ApiService içindeki metodun @GET("users") fun login(@Query("username") username: String) şeklinde olmalı.
         return api.login(username)
+    }
+
+    // YENİ EKLENEN: Yeni kullanıcı oluşturur (Register mantığı)
+    // MockAPI /users endpoint'ine POST isteği atarak kullanıcıyı kaydeder.
+    suspend fun register(user: User): Response<User> {
+        return api.registerUser(user)
     }
 }

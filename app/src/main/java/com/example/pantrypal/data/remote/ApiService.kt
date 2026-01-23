@@ -10,17 +10,26 @@ import retrofit2.http.Query
 
 interface ApiService {
 
-    // Login (Users kaynağına gidiyor - Bu doğru)
+    // --- USER ENDPOINTS ---
+
+    // Mevcut Login (Kullanıcı kontrolü)
     @GET("users")
     suspend fun login(
         @Query("username") username: String
     ): Response<List<User>>
 
-    // DÜZELTME: 'products' yerine 'product' (Senin MockAPI ismin)
+    // YENİ EKLENEN: Register (Kullanıcı Kayıt)
+    @POST("users")
+    suspend fun registerUser(@Body user: User): Response<User>
+
+
+    // --- PRODUCT ENDPOINTS ---
+
+    // Mevcut Ürün Listeleme
     @GET("product")
     suspend fun getProducts(): Response<List<Product>>
 
-    // DÜZELTME: 'products' yerine 'product' (Senin MockAPI ismin)
+    // Mevcut Ürün Ekleme
     @POST("product")
     suspend fun addProduct(@Body product: Product): Response<Product>
 }

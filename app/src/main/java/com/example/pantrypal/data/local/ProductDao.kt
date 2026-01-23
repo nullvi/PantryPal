@@ -9,9 +9,10 @@ import com.example.pantrypal.data.model.Product
 
 @Dao
 interface ProductDao {
-    // Listeleme
-    @Query("SELECT * FROM products ORDER BY expiryDate ASC")
-    suspend fun getAll(): List<Product>
+    // Listeleme (GÜNCELLENDİ)
+    // Sadece parametre olarak gelen 'ownerId'ye ait ürünleri getiriyoruz.
+    @Query("SELECT * FROM products WHERE ownerId = :ownerId ORDER BY expiryDate ASC")
+    suspend fun getAll(ownerId: String): List<Product>
 
     // Ekleme
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -28,7 +29,6 @@ interface ProductDao {
     suspend fun getUnsyncedProducts(): List<Product>
 
     // 2. Durum Güncelleme
-    // DÜZELTME: 'id' yerine senin modelindeki 'uid' ismini kullandık.
     @Query("UPDATE products SET status = :newStatus WHERE uid = :productId")
     suspend fun updateStatus(productId: Int, newStatus: Int)
 }

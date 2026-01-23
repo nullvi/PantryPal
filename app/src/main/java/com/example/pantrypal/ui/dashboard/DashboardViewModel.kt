@@ -1,10 +1,11 @@
 package com.example.pantrypal.ui.dashboard
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import com.example.pantrypal.data.local.AppDatabase // Senin dosyanın adı bu
+import com.example.pantrypal.data.local.AppDatabase
 import com.example.pantrypal.data.model.Product
 import com.example.pantrypal.data.repository.ProductRepository
 import kotlinx.coroutines.Dispatchers
@@ -17,18 +18,29 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     val isLoading = MutableLiveData<Boolean>()
 
     init {
-        // DÜZELTİLDİ: Senin dosya ismin olan 'AppDatabase' kullanıldı.
         val productDao = AppDatabase.getDatabase(application).productDao()
         repository = ProductRepository(productDao)
     }
 
-    // Ürünleri Listele
+    // Ürünleri Listele (GÜNCELLENDİ)
     fun loadProducts() {
-        viewModelScope.launch(Dispatchers.IO) { // Arka planda çalış
+        viewModelScope.launch(Dispatchers.IO) {
             isLoading.postValue(true)
             try {
-                val productList = repository.getAllProducts()
-                products.postValue(productList)
+                // 1. ÖNCE: Şu anki kullanıcı adını hafızadan (SharedPreferences) öğren
+                val sharedPrefs = getApplication<Application>().getSharedPreferences("PantryPalParams", Context.MODE_PRIVATE)
+                // Eğer username yoksa boş string döner
+                val currentUser = sharedPrefs.getString("username", "") ?: ""
+
+                // 2. SONRA: Repository'e "Sadece bu kullanıcının verilerini ver" de
+                if (currentUser.isNotEmpty()) {
+                    val productList = repository.getAllProducts(currentUser)
+                    products.postValue(productList)
+                } else {
+                    // Kullanıcı giriş yapmamışsa boş liste göster
+                    products.postValue(emptyList())
+                }
+
             } catch (e: Exception) {
                 products.postValue(emptyList())
             } finally {
@@ -45,13 +57,10 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    // --- SYNC MOTORUNU ÇALIŞTIR (Yeni) ---
+    // Sync Motoru
     fun syncPendingData() {
         viewModelScope.launch(Dispatchers.IO) {
-            // Repository'deki "Postacıyı" çalıştır
             repository.syncUnsyncedProducts()
-
-            // İşlem bitince listeyi tazelemek iyi olur
             loadProducts()
         }
     }

@@ -6,9 +6,9 @@ import com.example.pantrypal.data.remote.RetrofitClient
 
 class ProductRepository(private val productDao: ProductDao) {
 
-    // Tüm ürünleri getir
-    suspend fun getAllProducts(): List<Product> {
-        return productDao.getAll()
+    // GÜNCELLENDİ: Artık kullanıcı ID'sine göre veri çekiyoruz
+    suspend fun getAllProducts(ownerId: String): List<Product> {
+        return productDao.getAll(ownerId)
     }
 
     // Ürün ekle
@@ -31,12 +31,12 @@ class ProductRepository(private val productDao: ProductDao) {
         // 2. Sırayla API'ye gönder
         for (product in unsyncedList) {
             try {
-                // DÜZELTME: 'apiService' yerine 'instance' kullanıldı
+                // Not: Product modeline owner_id eklendiği için,
+                // Retrofit bunu JSON'a çevirirken owner_id'yi de otomatik ekler.
                 val response = RetrofitClient.instance.addProduct(product)
 
                 if (response.isSuccessful) {
-                    // 3. Başarılıysa: Yerelde 'status = 0' yap
-                    // DÜZELTME: product.id yerine product.uid kullanıldı
+                    // 3. Başarılıysa: Yerelde 'status = 0' yap (Synced)
                     productDao.updateStatus(product.uid, 0)
                     android.util.Log.d("SYNC", "Sent successfully: ${product.name}")
                 } else {
