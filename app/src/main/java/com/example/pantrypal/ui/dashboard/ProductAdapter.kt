@@ -15,7 +15,8 @@ import java.util.concurrent.TimeUnit
 
 class ProductAdapter(
     private var products: List<Product>,
-    private val onDeleteClick: (Product) -> Unit
+    private val onDeleteClick: (Product) -> Unit,
+    private val onItemClick: (Product) -> Unit // <--- YENİ EKLENDİ: Karta Tıklama Olayı
 ) : RecyclerView.Adapter<ProductAdapter.ProductViewHolder>() {
 
     inner class ProductViewHolder(val binding: ItemProductBinding) : RecyclerView.ViewHolder(binding.root)
@@ -39,46 +40,48 @@ class ProductAdapter(
         holder.binding.tvExpiryDate.text = "Expires: $formattedDate"
 
         // 2. Resim Yükleme (Glide)
-        // Eğer resim URL'si varsa yükle, yoksa varsayılan ikonu göster
         if (!product.imageUrl.isNullOrEmpty()) {
             Glide.with(context)
                 .load(product.imageUrl)
-                .circleCrop() // Resmi yuvarlak yap
+                .circleCrop()
                 .placeholder(android.R.drawable.ic_menu_gallery)
                 .into(holder.binding.ivProductImage)
         } else {
             holder.binding.ivProductImage.setImageResource(android.R.drawable.ic_menu_gallery)
         }
 
-        // 3. Modern Renklendirme Mantığı (Şerit Rengi)
+        // 3. Renklendirme Mantığı (Şerit Rengi)
         val diff = product.expiryDate - System.currentTimeMillis()
         val daysLeft = TimeUnit.MILLISECONDS.toDays(diff)
 
-        // Renkleri resource dosyasından al
         val colorFresh = ContextCompat.getColor(context, R.color.status_fresh)
         val colorWarning = ContextCompat.getColor(context, R.color.status_warning)
         val colorExpired = ContextCompat.getColor(context, R.color.status_expired)
-        val colorTextGray = ContextCompat.getColor(context, R.color.gray_text)
+        val colorTextGray = ContextCompat.getColor(context, R.color.text_secondary)
 
         if (daysLeft < 0) {
-            // TARİHİ GEÇMİŞ: Şerit Kırmızı, Yazı Kırmızı
+            // TARİHİ GEÇMİŞ
             holder.binding.viewStatusIndicator.setBackgroundColor(colorExpired)
             holder.binding.tvExpiryDate.text = "EXPIRED ($formattedDate)"
             holder.binding.tvExpiryDate.setTextColor(colorExpired)
         } else if (daysLeft <= 3) {
-            // KRİTİK (3 günden az): Şerit Sarı/Turuncu, Yazı Turuncu
+            // KRİTİK (3 günden az)
             holder.binding.viewStatusIndicator.setBackgroundColor(colorWarning)
             holder.binding.tvExpiryDate.setTextColor(colorWarning)
         } else {
-            // TAZE: Şerit Yeşil, Yazı Gri
+            // TAZE
             holder.binding.viewStatusIndicator.setBackgroundColor(colorFresh)
             holder.binding.tvExpiryDate.setTextColor(colorTextGray)
         }
 
-        // 4. Silme İşlemi (Uzun Basınca)
-        holder.itemView.setOnLongClickListener {
+        // 4. SİLME İŞLEMİ (Çöp kutusuna tıklayınca)
+        holder.binding.btnDelete.setOnClickListener {
             onDeleteClick(product)
-            true
+        }
+
+        // 5. YENİ: DÜZENLEME İŞLEMİ (Karta tıklayınca)
+        holder.itemView.setOnClickListener {
+            onItemClick(product)
         }
     }
 

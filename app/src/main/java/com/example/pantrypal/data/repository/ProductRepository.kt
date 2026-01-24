@@ -16,30 +16,67 @@ class ProductRepository(private val productDao: ProductDao) {
         productDao.insert(product)
     }
 
-    // Ürün sil
-    suspend fun delete(product: Product) {
-        productDao.delete(product)
+    // --- YENİ EKLENEN: GÜNCELLEME (EDIT) FONKSİYONU ---
+    suspend fun update(product: Product) {
+        // 1. Önce Local DB'de güncelle
+        // Güvenlik önlemi: Status'u 1 (Dirty) yapıyoruz.
+        // Eğer internet yoksa, Sync motoru bunu sonra yakalar.
+        val productToUpdate = product.copy(status = 1)
+        productDao.update(productToUpdate)
+
+        // 2. Eğer ürün Bulutta varsa (ID'si varsa), orayı da güncellemeye çalış
+        if (!product.id.isNullOrEmpty()) {
+            try {
+                val response = RetrofitClient.instance.updateProduct(product.id, product)
+
+                if (response.isSuccessful) {
+                    // Başarılı! Local DB'de status'u 0 (Synced) yap.
+                    productDao.updateStatus(product.uid, 0)
+                    android.util.Log.d("SYNC", "Updated on Cloud: ${product.name}")
+                } else {
+                    android.util.Log.e("SYNC", "Cloud update failed: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                // İnternet yoksa sorun yok, Local'de zaten status=1 yaptık.
+                android.util.Log.e("SYNC", "Cloud Update Error: ${e.message}")
+            }
+        }
     }
 
-    // --- YENİ EKLENEN: BULUTTAN VERİ ÇEKME (FETCH/PULL) ---
+    // --- SİLME FONKSİYONU ---
+    suspend fun delete(product: Product) {
+        // ADIM 1: Önce Yerel Veritabanından (Room) SİL (Garanti olsun diye UID ile)
+        productDao.deleteByUid(product.uid)
+
+        // ADIM 2: Cloud'dan sil
+        if (!product.id.isNullOrEmpty()) {
+            try {
+                val response = RetrofitClient.instance.deleteProduct(product.id)
+
+                if (response.isSuccessful) {
+                    android.util.Log.d("SYNC", "Deleted from Cloud: ${product.name}")
+                } else {
+                    android.util.Log.e("SYNC", "Failed to delete from Cloud: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("SYNC", "Cloud Delete Error: ${e.message}")
+            }
+        }
+    }
+
+    // --- BULUTTAN VERİ ÇEKME (FETCH/PULL) ---
     suspend fun refreshProductsFromApi(ownerId: String) {
         try {
-            // 1. API'ye sor: "Bu kullanıcının ürünleri var mı?"
             val response = RetrofitClient.instance.getProducts(ownerId)
 
             if (response.isSuccessful && response.body() != null) {
                 val remoteList = response.body()!!
 
-                // 2. Gelen verileri Yerel DB'ye kaydet
                 for (remoteProduct in remoteList) {
-                    // API'den gelen veri temizdir (Synced = 0)
-                    // Ayrıca ownerId'yi garantiye alalım
                     val productToSave = remoteProduct.copy(
                         status = 0, // SYNCED
                         ownerId = ownerId
                     )
-
-                    // Veritabanına yaz (Çakışma varsa üzerine yazar/günceller)
                     productDao.insert(productToSave)
                 }
                 android.util.Log.d("SYNC", "Fetched ${remoteList.size} items from cloud.")
@@ -49,7 +86,8 @@ class ProductRepository(private val productDao: ProductDao) {
         }
     }
 
-    // --- MEVCUT: BULUTA VERİ GÖNDERME (PUSH) ---
+    // --- BULUTA VERİ GÖNDERME (PUSH) - GÜNCELLENDİ ---
+    // Artık hem yeni eklenenleri (POST) hem de düzenlenenleri (PUT) ayırt edip gönderir.
     suspend fun syncUnsyncedProducts() {
         val unsyncedList = productDao.getUnsyncedProducts()
 
@@ -57,13 +95,21 @@ class ProductRepository(private val productDao: ProductDao) {
 
         for (product in unsyncedList) {
             try {
-                val response = RetrofitClient.instance.addProduct(product)
+                // KARAR ANI: Bu ürün yeni mi yoksa düzenlenmiş mi?
+                // ID'si yoksa -> YENİ (POST)
+                // ID'si varsa -> DÜZENLENMİŞ (PUT)
+
+                val response = if (product.id.isNullOrEmpty()) {
+                    RetrofitClient.instance.addProduct(product)
+                } else {
+                    RetrofitClient.instance.updateProduct(product.id, product)
+                }
 
                 if (response.isSuccessful) {
                     productDao.updateStatus(product.uid, 0)
-                    android.util.Log.d("SYNC", "Sent successfully: ${product.name}")
+                    android.util.Log.d("SYNC", "Sync Success (Create/Edit): ${product.name}")
                 } else {
-                    android.util.Log.e("SYNC", "Failed to send: ${response.code()}")
+                    android.util.Log.e("SYNC", "Sync Failed: ${response.code()}")
                 }
             } catch (e: Exception) {
                 android.util.Log.e("SYNC", "Sync Error: ${e.message}")

@@ -59,30 +59,25 @@ class AddProductViewModel(application: Application) : AndroidViewModel(applicati
         })
     }
 
-    // Veritabanına Kaydetme (Database Logic)
+    // YENİ ÜRÜN EKLEME (ADD)
     fun addProduct(name: String, quantity: Int, expiryDateStr: String, barcode: String, onResult: (Boolean) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 // 1. Tarihi Formatla
-                val dateLong = try {
-                    val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                    sdf.parse(expiryDateStr)?.time ?: System.currentTimeMillis()
-                } catch (e: Exception) {
-                    System.currentTimeMillis()
-                }
+                val dateLong = parseDateToLong(expiryDateStr)
 
-                // 2. YENİ: Şu anki kullanıcı adını al (Owner ID)
+                // 2. Şu anki kullanıcı adını al (Owner ID)
                 val sharedPrefs = getApplication<Application>().getSharedPreferences("PantryPalParams", Context.MODE_PRIVATE)
                 val currentOwnerId = sharedPrefs.getString("username", "Guest") ?: "Guest"
 
-                // 3. Product Objesini Oluştur (ownerId eklendi)
+                // 3. Product Objesini Oluştur
                 val newProduct = Product(
                     barcode = barcode,
                     name = name,
                     quantity = quantity,
                     expiryDate = dateLong,
                     status = 1, // DIRTY (Henüz sunucuya gitmedi)
-                    ownerId = currentOwnerId // YENİ: Bu ürünün sahibi kim?
+                    ownerId = currentOwnerId
                 )
 
                 // 4. Kaydet
@@ -92,12 +87,53 @@ class AddProductViewModel(application: Application) : AndroidViewModel(applicati
                     onResult(true)
                 }
             } catch (e: Exception) {
-                // Hata durumunda log basılabilir
                 e.printStackTrace()
                 launch(Dispatchers.Main) {
                     onResult(false)
                 }
             }
+        }
+    }
+
+    // --- YENİ EKLENEN: ÜRÜN GÜNCELLEME (EDIT) ---
+    fun updateProduct(originalProduct: Product, name: String, quantity: Int, expiryDateStr: String, barcode: String, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                // 1. Tarihi Formatla
+                val dateLong = parseDateToLong(expiryDateStr)
+
+                // 2. Objeyi Kopyala ve Güncelle
+                // copy() metodu ile ID'leri (uid, id, ownerId) koruyoruz, sadece içeriği değiştiriyoruz.
+                val updatedProduct = originalProduct.copy(
+                    name = name,
+                    quantity = quantity,
+                    expiryDate = dateLong,
+                    barcode = barcode,
+                    status = 1 // Değişiklik olduğu için tekrar senkronize edilmeli (Dirty)
+                )
+
+                // 3. Repository üzerinden güncelle
+                repository.update(updatedProduct)
+
+                launch(Dispatchers.Main) {
+                    onResult(true)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                launch(Dispatchers.Main) {
+                    onResult(false)
+                }
+            }
+        }
+    }
+
+    // Yardımcı Fonksiyon: Tarih Çevirme
+    private fun parseDateToLong(dateStr: String): Long {
+        return try {
+            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            sdf.parse(dateStr)?.time ?: System.currentTimeMillis()
+        } catch (e: Exception) {
+            System.currentTimeMillis()
         }
     }
 }

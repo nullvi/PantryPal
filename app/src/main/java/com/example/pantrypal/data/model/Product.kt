@@ -6,11 +6,14 @@ import com.google.gson.annotations.SerializedName
 
 @Entity(tableName = "products")
 data class Product(
+    // YEREL ID: Telefonun kendi içinde kullandığı sayısal ID (Otomatik Artar)
     @PrimaryKey(autoGenerate = true)
     val uid: Int = 0,
 
+    // BULUT ID: MockAPI'nin verdiği String ID.
+    // Repository hatasını çözmek için bu alanın adı mutlaka 'id' olmalı.
     @SerializedName("id")
-    val remoteId: String? = null,
+    val id: String? = null,
 
     @SerializedName("barcode")
     val barcode: String? = null,
@@ -21,18 +24,17 @@ data class Product(
     @SerializedName("quantity")
     val quantity: Int,
 
-    // String DEĞİL Long olmalı!
+    // Tarih (Timestamp olarak Long tutulur)
     @SerializedName("expiry_date")
     val expiryDate: Long,
 
     @SerializedName("image_url")
     val imageUrl: String? = null,
 
-    // Status alanı (1 = Dirty/Gönderilmeyi Bekliyor)
+    // Status: 0 = Synced (Gönderildi), 1 = Dirty (Gönderilmeyi Bekliyor)
     val status: Int = 1,
 
-    // YENİ EKLENEN: Veri izolasyonu için kullanıcı kimliği
-    // MockAPI'de "owner_id" sütununa karşılık gelecek.
+    // Veri İzolasyonu: Ürünün kime ait olduğu
     @SerializedName("owner_id")
-    val ownerId: String
+    val ownerId: String? = null
 )

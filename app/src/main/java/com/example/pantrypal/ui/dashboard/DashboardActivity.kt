@@ -34,43 +34,30 @@ class DashboardActivity : AppCompatActivity() {
         setupListeners()
     }
 
-    // --- MENÜ ENTEGRASYONU BAŞLANGICI ---
-
-    // 1. Menüyü sağ üste yerleştir ve KULLANICI ADINI YAZ
+    // --- MENÜ ENTEGRASYONU ---
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.dashboard_menu, menu)
 
-        // --- YENİ EKLENEN KISIM: Kullanıcı Adını Gösterme ---
         val sharedPrefs = getSharedPreferences("PantryPalParams", MODE_PRIVATE)
-        val username = sharedPrefs.getString("username", "Guest") // Varsayılan: Guest
+        val username = sharedPrefs.getString("username", "Guest")
 
-        // Menüdeki 'action_user_info' öğesini bul ve başlığını değiştir
         val userItem = menu?.findItem(R.id.action_user_info)
         userItem?.title = "Hi, $username"
-        // ----------------------------------------------------
 
         return true
     }
 
-    // 2. Menü elemanlarına tıklanınca ne olacağını seç
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_about -> {
-                // About ekranına git
-                val intent = Intent(this, AboutActivity::class.java)
-                startActivity(intent)
+                startActivity(Intent(this, AboutActivity::class.java))
                 true
             }
             R.id.action_logout -> {
-                // Çıkış yaparken hafızayı (SharedPreferences) temizle
                 val sharedPrefs = getSharedPreferences("PantryPalParams", MODE_PRIVATE)
-                val editor = sharedPrefs.edit()
-                editor.clear() // Tüm kayıtlı verileri sil (Beni hatırla iptal)
-                editor.apply()
+                sharedPrefs.edit().clear().apply()
 
-                // Şimdi Login ekranına dön
                 val intent = Intent(this, LoginActivity::class.java)
-                // Geri tuşuna basınca tekrar Dashboard'a dönmemesi için geçmişi temizle
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 startActivity(intent)
                 finish()
@@ -79,34 +66,44 @@ class DashboardActivity : AppCompatActivity() {
             else -> super.onOptionsItemSelected(item)
         }
     }
-    // --- MENÜ ENTEGRASYONU BİTİŞİ ---
 
     // Listeyi tazelemek ve Sync başlatmak için
     override fun onResume() {
         super.onResume()
-        // 1. Listeyi yükle
         viewModel.loadProducts()
-
-        // 2. Bekleyen verileri buluta gönder (Sync)
         viewModel.syncPendingData()
     }
 
     private fun setupRecyclerView() {
-        // Adapter'ı başlatıyoruz. İkinci parametre (lambda) silme işlemi için.
-        adapter = ProductAdapter(emptyList()) { productToDelete ->
-            showDeleteConfirmation(productToDelete)
-        }
+        // GÜNCELLENDİ: Adapter artık 2 parametre alıyor (Silme ve Tıklama)
+        adapter = ProductAdapter(
+            products = emptyList(),
+            onDeleteClick = { product ->
+                showDeleteConfirmation(product)
+            },
+            onItemClick = { product ->
+                // Karta tıklayınca DÜZENLEME EKRANINI (AddProductActivity) aç
+                // Ve mevcut verileri gönder
+                val intent = Intent(this, AddProductActivity::class.java)
+                intent.putExtra("p_uid", product.uid)
+                intent.putExtra("p_id", product.id) // Cloud ID
+                intent.putExtra("p_name", product.name)
+                intent.putExtra("p_quantity", product.quantity)
+                intent.putExtra("p_date", product.expiryDate)
+                intent.putExtra("p_barcode", product.barcode)
+                intent.putExtra("p_owner", product.ownerId)
+                startActivity(intent)
+            }
+        )
 
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
         binding.recyclerView.adapter = adapter
     }
 
     private fun setupObservers() {
-        // Ürün listesini dinle
         viewModel.products.observe(this) { productList ->
             adapter.updateList(productList)
 
-            // Liste boşsa uyarı yazısını göster
             if (productList.isEmpty()) {
                 binding.tvEmptyState.visibility = View.VISIBLE
             } else {
@@ -117,7 +114,6 @@ class DashboardActivity : AppCompatActivity() {
 
     private fun setupListeners() {
         binding.fabAdd.setOnClickListener {
-            // AddProductActivity'ye geçiş yap
             val intent = Intent(this, AddProductActivity::class.java)
             startActivity(intent)
         }

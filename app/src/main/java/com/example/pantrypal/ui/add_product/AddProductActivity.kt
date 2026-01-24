@@ -10,9 +10,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import com.example.pantrypal.data.model.Product
 import com.example.pantrypal.databinding.ActivityAddProductBinding
 import com.example.pantrypal.ui.scanner.BarcodeScannerActivity
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 
 class AddProductActivity : AppCompatActivity() {
@@ -20,32 +23,30 @@ class AddProductActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAddProductBinding
     private val viewModel: AddProductViewModel by viewModels()
 
-    // 1. Barkod Tarayıcıdan gelen sonucu yakalayan launcher
+    // --- DÜZENLEME MODU DEĞİŞKENLERİ ---
+    private var isEditMode = false
+    private var currentProduct: Product? = null
+
+    // 1. Barkod Sonucu
     private val barcodeLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == RESULT_OK) {
             val barcode = result.data?.getStringExtra("scanned_barcode")
             barcode?.let {
-                // Barkodu ekrana yaz
                 binding.etBarcode.setText(it)
-
-                // Kullanıcıya bilgi ver ve internetten aramayı başlat
                 Toast.makeText(this, "Searching online...", Toast.LENGTH_SHORT).show()
                 viewModel.searchBarcode(it)
             }
         }
     }
 
-    // 2. Kamera İznini isteyen launcher
+    // 2. Kamera İzni
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
-        if (isGranted) {
-            openScanner()
-        } else {
-            Toast.makeText(this, "Camera permission needed to scan!", Toast.LENGTH_LONG).show()
-        }
+        if (isGranted) openScanner()
+        else Toast.makeText(this, "Camera permission needed!", Toast.LENGTH_LONG).show()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,19 +55,22 @@ class AddProductActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         setupDatePicker()
-
-        // ViewModel'i dinlemeye başla (İsim gelirse dolduracak)
         observeViewModel()
 
-        // --- YENİ EKLENEN KISIM: Kapat (X) Butonu ---
-        binding.btnClose.setOnClickListener {
-            // Aktiviteyi sonlandır ve önceki ekrana dön
-            finish()
+        // --- EDİT MODU KONTROLÜ ---
+        if (intent.hasExtra("p_uid")) {
+            isEditMode = true
+            setupEditMode()
         }
-        // --------------------------------------------
+
+        binding.btnClose.setOnClickListener { finish() }
 
         binding.btnSave.setOnClickListener {
-            saveProduct()
+            if (isEditMode) {
+                updateExistingProduct()
+            } else {
+                saveNewProduct()
+            }
         }
 
         binding.btnScan.setOnClickListener {
@@ -74,33 +78,93 @@ class AddProductActivity : AppCompatActivity() {
         }
     }
 
-    // 3. ViewModel'den gelen verileri (Ürün Adı) dinle
+    private fun setupEditMode() {
+        val uid = intent.getIntExtra("p_uid", 0)
+        val id = intent.getStringExtra("p_id")
+        val name = intent.getStringExtra("p_name") ?: ""
+        val quantity = intent.getIntExtra("p_quantity", 1)
+        val dateLong = intent.getLongExtra("p_date", System.currentTimeMillis())
+        val barcode = intent.getStringExtra("p_barcode")
+        val ownerId = intent.getStringExtra("p_owner") ?: ""
+
+        // Formu Doldur
+        binding.etName.setText(name)
+        binding.etQuantity.setText(quantity.toString())
+        binding.etBarcode.setText(barcode)
+
+        val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+        binding.etDate.setText(sdf.format(Date(dateLong)))
+
+        // UI Başlıklarını Değiştir
+        binding.tvTitle.text = "Edit Product"
+        binding.btnSave.text = "Update Product"
+
+        currentProduct = Product(
+            uid = uid,
+            id = id,
+            name = name,
+            quantity = quantity,
+            expiryDate = dateLong,
+            barcode = barcode,
+            ownerId = ownerId,
+            status = 1
+        )
+    }
+
+    private fun saveNewProduct() {
+        val name = binding.etName.text.toString().trim()
+        val quantityStr = binding.etQuantity.text.toString().trim()
+        val date = binding.etDate.text.toString().trim()
+        val barcode = binding.etBarcode.text.toString().trim()
+
+        if (validateInput(name, quantityStr)) {
+            val quantity = quantityStr.toInt()
+            viewModel.addProduct(name, quantity, date, barcode) { success ->
+                if (success) {
+                    Toast.makeText(this, "Product Saved!", Toast.LENGTH_SHORT).show()
+                    finish()
+                } else {
+                    Toast.makeText(this, "Error saving product", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun updateExistingProduct() {
+        val name = binding.etName.text.toString().trim()
+        val quantityStr = binding.etQuantity.text.toString().trim()
+        val date = binding.etDate.text.toString().trim()
+        val barcode = binding.etBarcode.text.toString().trim()
+
+        if (validateInput(name, quantityStr) && currentProduct != null) {
+            val quantity = quantityStr.toInt()
+            viewModel.updateProduct(currentProduct!!, name, quantity, date, barcode) { success ->
+                if (success) {
+                    Toast.makeText(this, "Product Updated!", Toast.LENGTH_SHORT).show()
+                    finish()
+                } else {
+                    Toast.makeText(this, "Error updating product", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun validateInput(name: String, quantityStr: String): Boolean {
+        if (name.isEmpty() || quantityStr.isEmpty()) {
+            Toast.makeText(this, "Please enter Name and Quantity", Toast.LENGTH_SHORT).show()
+            return false
+        }
+        return true
+    }
+
     private fun observeViewModel() {
         viewModel.scannedProductName.observe(this) { productName ->
             if (productName != null) {
-                // 1. Durum: Ürün Bulundu
                 binding.etName.setText(productName)
-
-                // Kullanıcıya şık bir mesaj ver
                 Toast.makeText(this, "Product Found: $productName", Toast.LENGTH_SHORT).show()
-
-                // Kolaylık olsun diye imleci direkt "Adet" (Quantity) kısmına at
                 binding.etQuantity.requestFocus()
-
             } else {
-                // 2. Durum: Ürün Bulunamadı
-                // Kullanıcıyı uyar
-                Toast.makeText(this, "Product not found. Please enter name manually.", Toast.LENGTH_LONG).show()
-
-                // İsim alanını temizle
-                binding.etName.setText("")
-
-                // İmleci "İsim" kutusuna odakla
-                binding.etName.requestFocus()
-
-                // Klavyeyi aç
-                val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
-                imm.showSoftInput(binding.etName, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+                Toast.makeText(this, "Not found. Enter manually.", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -116,50 +180,20 @@ class AddProductActivity : AppCompatActivity() {
                 val formattedDate = String.format(Locale.getDefault(), "%02d/%02d/%d", selectedDay, selectedMonth + 1, selectedYear)
                 binding.etDate.setText(formattedDate)
             }, year, month, day)
-
             datePicker.show()
         }
     }
 
     private fun checkCameraPermissionAndOpenScanner() {
-        when {
-            ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.CAMERA
-            ) == PackageManager.PERMISSION_GRANTED -> {
-                openScanner()
-            }
-            else -> {
-                requestPermissionLauncher.launch(Manifest.permission.CAMERA)
-            }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            openScanner()
+        } else {
+            requestPermissionLauncher.launch(Manifest.permission.CAMERA)
         }
     }
 
     private fun openScanner() {
         val intent = Intent(this, BarcodeScannerActivity::class.java)
         barcodeLauncher.launch(intent)
-    }
-
-    private fun saveProduct() {
-        val barcode = binding.etBarcode.text.toString().trim()
-        val name = binding.etName.text.toString().trim()
-        val quantityStr = binding.etQuantity.text.toString().trim()
-        val date = binding.etDate.text.toString().trim()
-
-        if (name.isEmpty() || quantityStr.isEmpty()) {
-            Toast.makeText(this, "Please enter at least Name and Quantity", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val quantity = quantityStr.toIntOrNull() ?: 1
-
-        viewModel.addProduct(name, quantity, date, barcode) { success ->
-            if (success) {
-                Toast.makeText(this, "Product Saved!", Toast.LENGTH_SHORT).show()
-                finish()
-            } else {
-                Toast.makeText(this, "Error saving product", Toast.LENGTH_SHORT).show()
-            }
-        }
     }
 }
